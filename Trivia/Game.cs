@@ -39,19 +39,24 @@ namespace Trivia
 
         public bool IsPlayable()
         {
-            return (HowManyPlayers() >= 2);
+            return HowManyPlayers() >= 2 && HowManyPlayers() <= 6;
         }
 
         public bool Add(string playerName)
         {
-            _players.Add(playerName);
-            _places[HowManyPlayers()] = 0;
-            _purses[HowManyPlayers()] = 0;
-            _inPenaltyBox[HowManyPlayers()] = false;
+            if (_players.Count < 6) 
+            {
+                _players.Add(playerName);
+                _places[HowManyPlayers() - 1] = 0;
+                _purses[HowManyPlayers() - 1] = 0;
+                _inPenaltyBox[HowManyPlayers() - 1] = false;
 
-            Console.WriteLine(playerName + " was added");
-            Console.WriteLine("They are player number " + _players.Count);
-            return true;
+                Console.WriteLine(playerName + " was added");
+                Console.WriteLine("They are player number " + _players.Count);
+                return true;
+            }
+
+            return false;
         }
 
         public int HowManyPlayers()

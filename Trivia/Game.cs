@@ -6,6 +6,7 @@ namespace Trivia
 {
     public class Game
     {
+        private string _selectedTheme;
         private readonly Random _random = new Random();
         private readonly List<string> _players = new List<string>();
 
@@ -18,6 +19,7 @@ namespace Trivia
         private readonly LinkedList<string> _scienceQuestions = new LinkedList<string>();
         private readonly LinkedList<string> _sportsQuestions = new LinkedList<string>();
         private readonly LinkedList<string> _rockQuestions = new LinkedList<string>();
+        private readonly LinkedList<string> _technoQuestions = new LinkedList<string>();
 
         private int _currentPlayer;
         private bool _isGettingOutOfPenaltyBox;
@@ -39,9 +41,11 @@ namespace Trivia
             {
                 case 0:
                     _rockQuestions.AddLast(CreateRockQuestion(indexQuestion));
+                    _selectedTheme = "Rock";
                     break;
                 case 1:
-                    _rockQuestions.AddLast(CreateTechnoQuestion(indexQuestion));
+                    _technoQuestions.AddLast(CreateTechnoQuestion(indexQuestion));
+                    _selectedTheme = "Techno";
                     break;
             }
         }
@@ -63,19 +67,14 @@ namespace Trivia
 
         public bool Add(string playerName)
         {
-            if (_players.Count < 6) 
-            {
-                _players.Add(playerName);
-                _places[HowManyPlayers() - 1] = 0;
-                _purses[HowManyPlayers() - 1] = 0;
-                _inPenaltyBox[HowManyPlayers() - 1] = false;
+            _players.Add(playerName);
+            _places[HowManyPlayers()] = 0;
+            _purses[HowManyPlayers()] = 0;
+            _inPenaltyBox[HowManyPlayers()] = false;
 
-                Console.WriteLine(playerName + " was added");
-                Console.WriteLine("They are player number " + _players.Count);
-                return true;
-            }
-
-            return false;
+            Console.WriteLine(playerName + " was added");
+            Console.WriteLine("They are player number " + _players.Count);
+            return true;
         }
 
         public int HowManyPlayers()
@@ -145,6 +144,11 @@ namespace Trivia
                 Console.WriteLine(_rockQuestions.First());
                 _rockQuestions.RemoveFirst();
             }
+            if (CurrentCategory() == "Techno")
+            {
+                Console.WriteLine(_technoQuestions.First());
+                _technoQuestions.RemoveFirst();
+            }
         }
 
         private string CurrentCategory()
@@ -158,7 +162,7 @@ namespace Trivia
             if (_places[_currentPlayer] == 2) return "Sports";
             if (_places[_currentPlayer] == 6) return "Sports";
             if (_places[_currentPlayer] == 10) return "Sports";
-            return "Rock";
+            return _selectedTheme;
         }
 
         public bool WasCorrectlyAnswered()

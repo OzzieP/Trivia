@@ -6,6 +6,7 @@ namespace Trivia
 {
     public class Game
     {
+        private readonly Random _random = new Random();
         private readonly List<string> _players = new List<string>();
 
         private readonly int[] _places = new int[6];
@@ -28,13 +29,31 @@ namespace Trivia
                 _popQuestions.AddLast("Pop Question " + i);
                 _scienceQuestions.AddLast(("Science Question " + i));
                 _sportsQuestions.AddLast(("Sports Question " + i));
-                _rockQuestions.AddLast(CreateRockQuestion(i));
+                QuestionSelected(_random.Next(0, 2), i);
+            }
+        }
+
+        private void QuestionSelected(int randomNumber, int indexQuestion)
+        {
+            switch (randomNumber)
+            {
+                case 0:
+                    _rockQuestions.AddLast(CreateRockQuestion(indexQuestion));
+                    break;
+                case 1:
+                    _rockQuestions.AddLast(CreateTechnoQuestion(indexQuestion));
+                    break;
             }
         }
 
         public string CreateRockQuestion(int index)
         {
             return "Rock Question " + index;
+        }
+
+        public string CreateTechnoQuestion(int index)
+        {
+            return "Techno Question " + index;
         }
 
         public bool IsPlayable()

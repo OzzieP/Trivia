@@ -9,17 +9,24 @@ namespace Trivia
         protected Categories? NextCategory = null;
         protected Categories RockOrTechno;
         protected int ScoreToWin;
+        protected int PrisonCells;
         protected bool IsNewGameWithSameConfiguration;
         
         protected List<Player> Players = new List<Player>();
         protected List<int> Places = new List<int>();
         protected List<int> Purses = new List<int>();
+        protected List<int> PenaltyBoxCells = new List<int>();
 
         protected readonly LinkedList<string> PopQuestions = new LinkedList<string>();
         protected readonly LinkedList<string> ScienceQuestions = new LinkedList<string>();
         protected readonly LinkedList<string> SportsQuestions = new LinkedList<string>();
         protected readonly LinkedList<string> RockQuestions = new LinkedList<string>();
         protected readonly LinkedList<string> TechnoQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> RapQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> PhilosophyQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> LitteratureQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> GeographyQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> PeopleQuestions = new LinkedList<string>();
 
         protected readonly List<LinkedList<string>> QuestionsList;
         protected readonly List<Player> PlayersWin = new List<Player>();
@@ -37,7 +44,12 @@ namespace Trivia
                 ScienceQuestions,
                 SportsQuestions,
                 RockQuestions,
-                TechnoQuestions
+                TechnoQuestions,
+                RapQuestions,
+                PhilosophyQuestions,
+                LitteratureQuestions,
+                GeographyQuestions,
+                PeopleQuestions
             };
         }
 
@@ -69,6 +81,8 @@ namespace Trivia
 
                 ScoreToWin = Utils.AskANumber("How many gold to win ?", 6);
 
+                PrisonCells = Utils.AskANumber("How many prison cells ? (0 for infinite cells)", 0);
+
                 CreateConfiguration();
             }
 
@@ -80,6 +94,7 @@ namespace Trivia
             Configurations.Clear();
             Configurations.Add("Category", RockOrTechno);
             Configurations.Add("Score", ScoreToWin);
+            Configurations.Add("Cells", PrisonCells);
             Configurations.Add("Players", new List<Player>(Players));
             Configurations.Add("Places", new List<int>(Places));
             Configurations.Add("Purses", new List<int>(Purses));
@@ -112,10 +127,12 @@ namespace Trivia
             IsNewGameWithSameConfiguration = true;
             PlayersWin.Clear();
 
+            RockOrTechno = (Categories) Configurations["Category"];
+            ScoreToWin = (int)Configurations["Score"];
+            PrisonCells = (int) Configurations["Cells"];
             Players = (List<Player>)Configurations["Players"];
             Places = (List<int>)Configurations["Places"];
             Purses = (List<int>)Configurations["Purses"];
-            ScoreToWin = (int)Configurations["Score"];
 
             foreach (Player player in Players)
                 player.Reset();
@@ -130,7 +147,12 @@ namespace Trivia
                 PopQuestions.AddLast($"Pop Question {i}");
                 ScienceQuestions.AddLast($"Science Question {i}");
                 SportsQuestions.AddLast($"Sports Question {i}");
-
+                RapQuestions.AddLast($"Rap Question {i}");
+                PhilosophyQuestions.AddLast($"Philosophy Question {i}");
+                LitteratureQuestions.AddLast($"Litterature Question {i}");
+                GeographyQuestions.AddLast($"Geography Question {i}");
+                PeopleQuestions.AddLast($"People Question {i}");
+                
                 switch (RockOrTechno)
                 {
                     case Categories.Rock:
@@ -267,6 +289,26 @@ namespace Trivia
                     Console.WriteLine(TechnoQuestions.First());
                     TechnoQuestions.RemoveFirst();
                     break;
+                case Categories.Rap:
+                    Console.WriteLine(RapQuestions.First());
+                    RapQuestions.RemoveFirst();
+                    break;
+                case Categories.Philosophy:
+                    Console.WriteLine(PhilosophyQuestions.First());
+                    PhilosophyQuestions.RemoveFirst();
+                    break;
+                case Categories.Litterature:
+                    Console.WriteLine(LitteratureQuestions.First());
+                    LitteratureQuestions.RemoveFirst();
+                    break;
+                case Categories.Geography:
+                    Console.WriteLine(GeographyQuestions.First());
+                    GeographyQuestions.RemoveFirst();
+                    break;
+                case Categories.People:
+                    Console.WriteLine(PeopleQuestions.First());
+                    PeopleQuestions.RemoveFirst();
+                    break;
             }
 
             CheckQuestionsCount();
@@ -331,7 +373,6 @@ namespace Trivia
                 Console.WriteLine($" Rank {rank} : {player.Name}");
                 rank++;
             });
-
 
             FinishGame();
         }
@@ -402,15 +443,15 @@ namespace Trivia
         {
             Console.WriteLine("Question was incorrectly answered");
             Console.WriteLine($"{Players[CurrentPlayer].Name} was sent to the penalty box");
-            
+
             Players[CurrentPlayer].IsInPenaltyBox = true;
             Players[CurrentPlayer].QuestionsAnsweredInARow = 0;
             Players[CurrentPlayer].TimeInPenaltyBox++;
-            
+            Players[CurrentPlayer].PercentBonus = 10;
+
             PlayerChooseNextQuestionCategory();
             NextPlayer();
         }
-
 
         protected bool DidPlayerWin()
         {
@@ -423,7 +464,6 @@ namespace Trivia
             
             return false;
         }
-
 
         protected void PlayerChooseNextQuestionCategory()
         {

@@ -10,6 +10,8 @@ namespace Trivia
 
         public bool IsInPenaltyBox { get; set; }
 
+        public bool isWinner { get; set; } = false;
+
         public int QuestionsAnsweredInARow { get; set; }
 
         public int TimeInPenaltyBox { get; set; }
@@ -38,6 +40,12 @@ namespace Trivia
         {
             Random random = new Random();
             return random.Next(9);
+        }
+
+        public bool IsOutOfPenaltyBox()
+        {
+            Random random = new Random();
+            return random.Next(TimeInPenaltyBox) == 0;
         }
     }
 }

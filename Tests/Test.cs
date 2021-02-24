@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using Trivia;
 using Xunit;
 
@@ -51,25 +53,38 @@ namespace Tests
             aGame.Add(new Player("Joueur4"));
             aGame.Add(new Player("Joueur5"));
             aGame.Add(new Player("Joueur6"));
+            aGame.Add(new Player("Joueur7"));
             
-            Assert.False(aGame.Add(new Player("Joueur7")));
+            Assert.False(aGame.IsPlayable());
         }
 
         [Fact]
         public void TestQuestionEquitable()
         {
-            ConsoleMock.MockConsole();
+            ConsoleMock.MockConsole("6");
             var aGame = new GameTest();
-            Player p1 = new Player("Joueur 1");
-            Player p2 = new Player("Joueur 2");
-            aGame.Add(p1);
-            aGame.Add(p2);
 
-            for  (int i  =  0; i  >  aGame.HowManyPlayers(); i++)
-            {
+            aGame.Add(new Player("Joueur 1"));
+            aGame.Add(new Player("Joueur 2"));
 
-            }
+            ConsoleMock.MockConsole("0");
+            aGame.StartGame();
+
+            while (aGame.IsPlayable())
+                aGame.Roll();
+
             ConsoleMock.UnMockConsole();
+
+            foreach (KeyValuePair<string, Dictionary<string, int>> entry in aGame.stats)
+            {
+                Debug.WriteLine($"Player: {entry.Key}");
+                Debug.WriteLine("---------------------------");
+                foreach (KeyValuePair<string, int> entryValue in entry.Value)
+                {
+                    Debug.WriteLine($"{entryValue.Key}: {entryValue.Value}");
+                }
+                Debug.WriteLine("===========================");
+            }
         }
     }
 }

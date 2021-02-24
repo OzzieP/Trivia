@@ -6,48 +6,63 @@ namespace Trivia
 {
     public class Game
     {
-        protected Categories? _nextCategory = null;
-        protected Categories _rockOrTechno;
-        protected int _scoreToWin;
-        protected readonly List<Player> _players = new List<Player>();
+        protected Categories? NextCategory = null;
+        protected Categories RockOrTechno;
+        protected int ScoreToWin;
+        
+        protected readonly List<Player> Players = new List<Player>();
+        protected readonly List<int> Places = new List<int>();
+        protected readonly List<int> Purses = new List<int>();
+        protected readonly List<bool> InPenaltyBox = new List<bool>();
 
-        protected readonly List<int> _places = new List<int>();
-        protected readonly List<int> _purses = new List<int>();
+        protected readonly LinkedList<string> PopQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> ScienceQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> SportsQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> RockQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> TechnoQuestions = new LinkedList<string>();
 
-        protected readonly List<bool> _inPenaltyBox = new List<bool>();
+        protected readonly List<LinkedList<string>> QuestionsList;
+        protected readonly List<Player> PlayersWin = new List<Player>();
 
-        protected readonly LinkedList<string> _popQuestions = new LinkedList<string>();
-        protected readonly LinkedList<string> _scienceQuestions = new LinkedList<string>();
-        protected readonly LinkedList<string> _sportsQuestions = new LinkedList<string>();
-        protected readonly LinkedList<string> _rockQuestions = new LinkedList<string>();
-        protected readonly LinkedList<string> _technoQuestions = new LinkedList<string>();
+        protected int CurrentPlayer;
+        protected bool IsGettingOutOfPenaltyBox;
 
-        protected static bool _isAWinner;
-        protected int _currentPlayer;
-        protected bool _isGettingOutOfPenaltyBox;
+        public Game()
+        {
+            QuestionsList = new List<LinkedList<string>>
+            {
+                PopQuestions,
+                ScienceQuestions,
+                SportsQuestions,
+                RockQuestions,
+                TechnoQuestions
+            };
+        }
 
-        public Game() { }
-
-        public void StartGame()
+        public virtual void StartGame()
         {
             int categorieChoice = Utils.Ask("Do you want to play with: ", new[] { "Techno questions ?", "Rock questions ?" });
-            _rockOrTechno = categorieChoice == 0 ? Categories.Techno : Categories.Rock;
+            RockOrTechno = categorieChoice == 0 ? Categories.Techno : Categories.Rock;
 
-            _scoreToWin = Utils.AskANumber("How many gold to win ?", 6);
+            ScoreToWin = Utils.AskANumber("How many gold to win ?", 6);
+            AddQuestions();
+        }
 
-            for (var i = 0; i < 50; i++)
+        protected void AddQuestions()
+        {
+            for (var i = 0; i < 5; i++)
             {
-                _popQuestions.AddLast($"Pop Question {i}");
-                _scienceQuestions.AddLast($"Science Question {i}");
-                _sportsQuestions.AddLast($"Sports Question {i}");
+                PopQuestions.AddLast($"Pop Question {i}");
+                ScienceQuestions.AddLast($"Science Question {i}");
+                SportsQuestions.AddLast($"Sports Question {i}");
 
-                switch (_rockOrTechno)
+                switch (RockOrTechno)
                 {
                     case Categories.Rock:
-                        _rockQuestions.AddLast($"Rock Question {i}");
+                        RockQuestions.AddLast($"Rock Question {i}");
                         break;
                     case Categories.Techno:
-                        _technoQuestions.AddLast($"Techno Question {i}");
+                        TechnoQuestions.AddLast($"Techno Question {i}");
                         break;
                 }
             }
@@ -58,90 +73,97 @@ namespace Trivia
             return HowManyPlayers() >= 2 && HowManyPlayers() <= 6;
         }
 
-        public bool Add(Player player)
+        public virtual bool Add(Player player)
         {
-            _players.Add(player);
-            _places.Add(0);
-            _purses.Add(0);
-            _inPenaltyBox.Add(false);
+            Players.Add(player);
+            Places.Add(0);
+            Purses.Add(0);
+            InPenaltyBox.Add(false);
 
             Console.WriteLine($"{player.Name} was added");
-            Console.WriteLine($"They are player number {_players.Count}");
+            Console.WriteLine($"They are player number {Players.Count}");
             return true;
         }
 
         public void Remove(Player player)
         {
-            int indexPlayer = _players.IndexOf(player);
+            int indexPlayer = Players.IndexOf(player);
 
-            _places.RemoveAt(indexPlayer);
-            _purses.RemoveAt(indexPlayer);
-            _players.RemoveAt(indexPlayer);
+            Places.RemoveAt(indexPlayer);
+            Purses.RemoveAt(indexPlayer);
+            Players.RemoveAt(indexPlayer);
 
             Console.WriteLine($"{player.Name} has left the game.");
         }
 
         public void NextPlayer()
         {
-            _currentPlayer++;
+            CurrentPlayer++;
 
-            if (_currentPlayer >= _players.Count)
-                _currentPlayer = 0;
+            if (CurrentPlayer >= Players.Count)
+                CurrentPlayer = 0;
 
             Console.WriteLine("===================================================");
         }
 
         public int HowManyPlayers()
         {
-            return _players.Count;
+            return Players.Count;
         }
 
         public void Roll()
         {
-            Console.WriteLine($"{_players[_currentPlayer].Name} is the current player");
+            Console.WriteLine($"{Players[CurrentPlayer].Name} is the current player");
             int quitChoice = Utils.Ask("Do you want to:", new[] { "Play !", "Quit the game." });
             if (quitChoice == 1)
             {
-                Remove(_players[_currentPlayer]);
+                Remove(Players[CurrentPlayer]);
                 NextPlayer();
                 return;
             }
 
-            int roll = _players[_currentPlayer].Roll();
+            int roll = Players[CurrentPlayer].Roll();
             Console.WriteLine($"They have rolled a {roll}");
 
-            if (_players[_currentPlayer].IsInPenaltyBox)
+            if (Players[CurrentPlayer].IsInPenaltyBox)
             {
-                if (roll % 2 != 0)
+                Console.WriteLine($"{Players[CurrentPlayer].Name} is in penalty box. The chance to get out is 1/{Players[CurrentPlayer].TimeInPenaltyBox}");
+                if (Players[CurrentPlayer].IsOutOfPenaltyBox())
                 {
-                    _isGettingOutOfPenaltyBox = true;
-                    _players[_currentPlayer].IsInPenaltyBox = false;
+                    IsGettingOutOfPenaltyBox = true;
+                    Players[CurrentPlayer].IsInPenaltyBox = false;
 
-                    Console.WriteLine($"{_players[_currentPlayer].Name} is getting out of the penalty box");
-                    _places[_currentPlayer] = _places[_currentPlayer] + roll;
+                    Console.WriteLine($"{Players[CurrentPlayer].Name} is getting out of the penalty box");
+                    Places[CurrentPlayer] = Places[CurrentPlayer] + roll;
 
-                    if (_places[_currentPlayer] > 11) _places[_currentPlayer] = _places[_currentPlayer] - 12;
+                    if (Places[CurrentPlayer] > 11) Places[CurrentPlayer] = Places[CurrentPlayer] - 12;
 
-                    Console.WriteLine($"{_players[_currentPlayer].Name}'s new location is {_places[_currentPlayer]}");
+                    Console.WriteLine($"{Players[CurrentPlayer].Name}'s new location is {Places[CurrentPlayer]}");
                     Console.WriteLine($"The category is {CurrentCategory()}");
                     AskQuestion();
                 }
                 else
                 {
-                    Console.WriteLine($"{_players[_currentPlayer].Name} is not getting out of the penalty box");
-                    _isGettingOutOfPenaltyBox = false;
+                    Console.WriteLine($"{Players[CurrentPlayer].Name} is not getting out of the penalty box");
+                    IsGettingOutOfPenaltyBox = false;
                 }
             }
             else
             {
-                _places[_currentPlayer] = _places[_currentPlayer] + roll;
-                if (_places[_currentPlayer] > 11) _places[_currentPlayer] = _places[_currentPlayer] - 12;
+                Places[CurrentPlayer] = Places[CurrentPlayer] + roll;
+                if (Places[CurrentPlayer] > 11) Places[CurrentPlayer] = Places[CurrentPlayer] - 12;
 
-                Console.WriteLine($"{_players[_currentPlayer].Name}'s new location is {_places[_currentPlayer]}");
+                Console.WriteLine($"{Players[CurrentPlayer].Name}'s new location is {Places[CurrentPlayer]}");
                 Console.WriteLine($"The category is {CurrentCategory()}");
 
                 AskQuestion();
             }
+        }
+
+        protected void CheckQuestionsCount()
+        {
+            if (QuestionsList.Any(l => l.Count == 0))
+                AddQuestions();
         }
 
         protected void AskQuestion()
@@ -149,37 +171,37 @@ namespace Trivia
             switch (CurrentCategory())
             {
                 case Categories.Pop:
-                    Console.WriteLine(_popQuestions.First());
-                    _popQuestions.RemoveFirst();
+                    Console.WriteLine(PopQuestions.First());
+                    PopQuestions.RemoveFirst();
                     break;
                 case Categories.Science:
-                    Console.WriteLine(_scienceQuestions.First());
-                    _scienceQuestions.RemoveFirst();
+                    Console.WriteLine(ScienceQuestions.First());
+                    ScienceQuestions.RemoveFirst();
                     break;
                 case Categories.Sports:
-                    Console.WriteLine(_sportsQuestions.First());
-                    _sportsQuestions.RemoveFirst();
+                    Console.WriteLine(SportsQuestions.First());
+                    SportsQuestions.RemoveFirst();
                     break;
                 case Categories.Rock:
-                    Console.WriteLine(_rockQuestions.First());
-                    _rockQuestions.RemoveFirst();
+                    Console.WriteLine(RockQuestions.First());
+                    RockQuestions.RemoveFirst();
                     break;
                 case Categories.Techno:
-                    Console.WriteLine(_technoQuestions.First());
-                    _technoQuestions.RemoveFirst();
+                    Console.WriteLine(TechnoQuestions.First());
+                    TechnoQuestions.RemoveFirst();
                     break;
             }
 
-            if (_players[_currentPlayer].JokerIsAvailable)
+            CheckQuestionsCount();
+
+            if (Players[CurrentPlayer].JokerIsAvailable)
             {
                 int choice = Utils.Ask("What do you want to do ?", new[] { "Answer the question", "Use the Joker" });
 
                 if (choice == 1)
                 {
-                    _players[_currentPlayer].UseJoker();
-
+                    Players[CurrentPlayer].UseJoker();
                     NextPlayer();
-
                     return;
                 }
             }
@@ -191,7 +213,7 @@ namespace Trivia
         {
             // Test
                 //if (_players[_currentPlayer].AnswerQuestion() > 2)
-            if (_players[_currentPlayer].AnswerQuestion() == 7)
+            if (Players[CurrentPlayer].AnswerQuestion() == 7)
                 WrongAnswer();
             else
                 WasCorrectlyAnswered();
@@ -199,14 +221,33 @@ namespace Trivia
 
         public bool IsAWinner()
         {
-            return _isAWinner;
+            if (PlayersWin.Count >= 3)
+                return true;
+
+            return false;
+        }
+
+        public void DisplayLeaderBoard()
+        {
+            int rank = 1;
+            Console.WriteLine("===================================================");
+            Console.WriteLine("THE LEADERBOARD :");
+
+            foreach (Player player in PlayersWin)
+            {
+                Console.WriteLine($" Rank {rank} : {player.Name}");
+                rank++;
+            }
+           
+            foreach(Player player in Players)
+                Console.WriteLine($" Unranked : {player.Name}");
         }
 
         protected virtual Categories CurrentCategory()
         {
-            if (_nextCategory is null)
+            if (NextCategory is null)
             {
-                switch (_places[_currentPlayer])
+                switch (Places[CurrentPlayer])
                 {
                     case 0:
                     case 4:
@@ -221,83 +262,91 @@ namespace Trivia
                     case 10:
                         return Categories.Sports;
                     default:
-                        return _rockOrTechno;
+                        return RockOrTechno;
                 }
             }
 
-            return (Categories) _nextCategory;
+            return (Categories) NextCategory;
         }
 
         public void WasCorrectlyAnswered()
         {
-            _nextCategory = null;
+            NextCategory = null;
 
-            if (_players[_currentPlayer].IsInPenaltyBox)
+            if (Players[CurrentPlayer].IsInPenaltyBox)
             {
-                if (_isGettingOutOfPenaltyBox)
+                if (IsGettingOutOfPenaltyBox)
                 {
                     Console.WriteLine("Answer was correct !!!!");
-                    _players[_currentPlayer].QuestionsAnsweredInARow++;
-                    _purses[_currentPlayer] += _players[_currentPlayer].QuestionsAnsweredInARow;
-                    Console.WriteLine($"{_players[_currentPlayer].Name} now has {_purses[_currentPlayer]} Gold Coins.");
+                    Players[CurrentPlayer].QuestionsAnsweredInARow++;
+                    Purses[CurrentPlayer] += Players[CurrentPlayer].QuestionsAnsweredInARow;
+                    Console.WriteLine($"{Players[CurrentPlayer].Name} now has {Purses[CurrentPlayer]} Gold Coins.");
 
                     var winner = DidPlayerWin();
                     NextPlayer();
-
-                    _isAWinner = winner;
+                    Players[CurrentPlayer].isWinner = winner;
                 }
                 else
                 {
                     NextPlayer();
-                    _isAWinner = true;
+                    Players[CurrentPlayer].isWinner = true;
                 }
             }
             else
             {
                 Console.WriteLine("Answer was correct !!!!");
-                _players[_currentPlayer].QuestionsAnsweredInARow++;
-                _purses[_currentPlayer] += _players[_currentPlayer].QuestionsAnsweredInARow;
-                Console.WriteLine($"{_players[_currentPlayer].Name} now has {_purses[_currentPlayer]} Gold Coins.");
+                Players[CurrentPlayer].QuestionsAnsweredInARow++;
+                Purses[CurrentPlayer] += Players[CurrentPlayer].QuestionsAnsweredInARow;
+                Console.WriteLine($"{Players[CurrentPlayer].Name} now has {Purses[CurrentPlayer]} Gold Coins.");
 
                 var winner = DidPlayerWin();
                 NextPlayer();
-                _isAWinner = winner;
+                Players[CurrentPlayer].isWinner = winner;
             }
         }
 
         public void WrongAnswer()
         {
             Console.WriteLine("Question was incorrectly answered");
-            Console.WriteLine($"{_players[_currentPlayer].Name} was sent to the penalty box");
-            _players[_currentPlayer].IsInPenaltyBox = true;
-            _players[_currentPlayer].QuestionsAnsweredInARow = 0;
+            Console.WriteLine($"{Players[CurrentPlayer].Name} was sent to the penalty box");
+            
+            Players[CurrentPlayer].IsInPenaltyBox = true;
+            Players[CurrentPlayer].QuestionsAnsweredInARow = 0;
+            Players[CurrentPlayer].TimeInPenaltyBox++;
+            
             PlayerChooseNextQuestionCategory();
-
             NextPlayer();
         }
 
 
         protected bool DidPlayerWin()
         {
-            return _purses[_currentPlayer] >= _scoreToWin;
+            if (Purses[CurrentPlayer] >= ScoreToWin)
+            {
+                PlayersWin.Add(Players[CurrentPlayer]);
+                Remove(Players[CurrentPlayer]);
+                return true;
+            }
+            
+            return false;
         }
+
 
         protected void PlayerChooseNextQuestionCategory()
         {
-            //_nextCategory = Utils.AskACategory(_rockOrTechno);
             List<Categories> categories = Enum.GetValues(typeof(Categories)).Cast<Categories>().Where(c =>
             {
-                if (c == Categories.Rock && _rockOrTechno == Categories.Techno)
+                if (c == Categories.Rock && RockOrTechno == Categories.Techno)
                     return false;
 
-                if (c == Categories.Techno && _rockOrTechno == Categories.Rock)
+                if (c == Categories.Techno && RockOrTechno == Categories.Rock)
                     return false;
 
                 return true;
             }).ToList();
             
             int indexOfCategories = Utils.Ask("Choose categorie for the next player.", categories.Select((c) => c.ToString()));
-            _nextCategory = categories[indexOfCategories];
+            NextCategory = categories[indexOfCategories];
         }
     }
 }

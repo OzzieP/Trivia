@@ -18,11 +18,10 @@ namespace Trivia
             {
                 aGame.StartGame();
 
-                while (!aGame.IsAWinner() && aGame.IsPlayable())
+                while (aGame.IsPlayable())
                     aGame.Roll();
 
-                if (!aGame.IsAWinner() && !aGame.IsPlayable())
-                    Console.WriteLine("Il n'y a plus assez de joueurs !");
+                aGame.DisplayLeaderBoard();
             }
         }
     }

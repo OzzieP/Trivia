@@ -4,37 +4,26 @@ namespace Trivia
 {
     public class GameRunner
     {
-        private static bool _notAWinner;
-
         public static void Main(string[] args)
         {
             var aGame = new Game();
 
-            aGame.Add("Chet");
-            aGame.Add("Pat");
-            aGame.Add("Sue");
+            aGame.Add(new Player("Chet"));
+            aGame.Add(new Player("Pat"));
+            aGame.Add(new Player("Sue"));
 
-
-            var rand = new Random();
-
-            if (aGame.IsPlayable())
-            {
-                do
-                {
-                    aGame.Roll(rand.Next(5) + 1);
-
-                    if (rand.Next(9) == 7)
-                    {
-                        _notAWinner = aGame.WrongAnswer();
-                    }
-                    else
-                    {
-                        _notAWinner = aGame.WasCorrectlyAnswered();
-                    }
-                } while (_notAWinner);
-            }
-            else
+            if (!aGame.IsPlayable())
                 Console.WriteLine("Il n'y a pas assez ou trop de joueurs !");
+            else
+            {
+                aGame.StartGame();
+
+                while (!aGame.IsAWinner() && aGame.IsPlayable())
+                    aGame.Roll();
+
+                if (!aGame.IsAWinner() && !aGame.IsPlayable())
+                    Console.WriteLine("Il n'y a plus assez de joueurs !");
+            }
         }
     }
 }

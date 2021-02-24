@@ -12,7 +12,7 @@ namespace Trivia
 
         public int QuestionsAnsweredInARow { get; set; }
 
-        public int T
+        public int TimeInPenaltyBox { get; set; }
 
         public Player(string name)
         {

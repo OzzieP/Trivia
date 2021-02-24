@@ -6,23 +6,25 @@ namespace Trivia
 {
     public class Game
     {
-        private Categories _rockOrTechno;
-        private readonly List<Player> _players = new List<Player>();
+        protected Categories? _nextCategory = null;
+        protected Categories _rockOrTechno;
+        protected int _scoreToWin;
+        protected readonly List<Player> _players = new List<Player>();
 
-        private readonly List<int> _places = new List<int>();
-        private readonly List<int> _purses = new List<int>();
+        protected readonly List<int> _places = new List<int>();
+        protected readonly List<int> _purses = new List<int>();
 
-        private readonly List<bool> _inPenaltyBox = new List<bool>();
+        protected readonly List<bool> _inPenaltyBox = new List<bool>();
 
-        private readonly LinkedList<string> _popQuestions = new LinkedList<string>();
-        private readonly LinkedList<string> _scienceQuestions = new LinkedList<string>();
-        private readonly LinkedList<string> _sportsQuestions = new LinkedList<string>();
-        private readonly LinkedList<string> _rockQuestions = new LinkedList<string>();
-        private readonly LinkedList<string> _technoQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> _popQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> _scienceQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> _sportsQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> _rockQuestions = new LinkedList<string>();
+        protected readonly LinkedList<string> _technoQuestions = new LinkedList<string>();
 
-        private static bool _isAWinner;
-        private int _currentPlayer;
-        private bool _isGettingOutOfPenaltyBox;
+        protected static bool _isAWinner;
+        protected int _currentPlayer;
+        protected bool _isGettingOutOfPenaltyBox;
 
         public Game() { }
 
@@ -30,6 +32,8 @@ namespace Trivia
         {
             int categorieChoice = Utils.Ask("Do you want to play with: ", new[] { "Techno questions ?", "Rock questions ?" });
             _rockOrTechno = categorieChoice == 0 ? Categories.Techno : Categories.Rock;
+
+            _scoreToWin = Utils.AskANumber("How many gold to win ?", 6);
 
             for (var i = 0; i < 50; i++)
             {
@@ -140,7 +144,7 @@ namespace Trivia
             }
         }
 
-        private void AskQuestion()
+        protected void AskQuestion()
         {
             switch (CurrentCategory())
             {
@@ -183,10 +187,10 @@ namespace Trivia
             AnswerQuestion();
         }
 
-        private void AnswerQuestion()
+        protected virtual void AnswerQuestion()
         {
             // Test
-            //if (_players[_currentPlayer].AnswerQuestion() > 2)
+                //if (_players[_currentPlayer].AnswerQuestion() > 2)
             if (_players[_currentPlayer].AnswerQuestion() == 7)
                 WrongAnswer();
             else
@@ -198,35 +202,43 @@ namespace Trivia
             return _isAWinner;
         }
 
-        private Categories CurrentCategory()
+        protected virtual Categories CurrentCategory()
         {
-            switch (_places[_currentPlayer])
+            if (_nextCategory is null)
             {
-                case 0:
-                case 4:
-                case 8:
-                    return Categories.Pop;
-                case 1:
-                case 5:
-                case 9:
-                    return Categories.Science;
-                case 2:
-                case 6:
-                case 10:
-                    return Categories.Sports;
-                default:
-                    return _rockOrTechno;
+                switch (_places[_currentPlayer])
+                {
+                    case 0:
+                    case 4:
+                    case 8:
+                        return Categories.Pop;
+                    case 1:
+                    case 5:
+                    case 9:
+                        return Categories.Science;
+                    case 2:
+                    case 6:
+                    case 10:
+                        return Categories.Sports;
+                    default:
+                        return _rockOrTechno;
+                }
             }
+
+            return (Categories) _nextCategory;
         }
 
         public void WasCorrectlyAnswered()
         {
-            if (_inPenaltyBox[_currentPlayer])
+            _nextCategory = null;
+
+            if (_players[_currentPlayer].IsInPenaltyBox)
             {
                 if (_isGettingOutOfPenaltyBox)
                 {
                     Console.WriteLine("Answer was correct !!!!");
-                    _purses[_currentPlayer]++;
+                    _players[_currentPlayer].QuestionsAnsweredInARow++;
+                    _purses[_currentPlayer] += _players[_currentPlayer].QuestionsAnsweredInARow;
                     Console.WriteLine($"{_players[_currentPlayer].Name} now has {_purses[_currentPlayer]} Gold Coins.");
 
                     var winner = DidPlayerWin();
@@ -243,12 +255,12 @@ namespace Trivia
             else
             {
                 Console.WriteLine("Answer was correct !!!!");
-                _purses[_currentPlayer]++;
+                _players[_currentPlayer].QuestionsAnsweredInARow++;
+                _purses[_currentPlayer] += _players[_currentPlayer].QuestionsAnsweredInARow;
                 Console.WriteLine($"{_players[_currentPlayer].Name} now has {_purses[_currentPlayer]} Gold Coins.");
 
                 var winner = DidPlayerWin();
                 NextPlayer();
-
                 _isAWinner = winner;
             }
         }
@@ -258,15 +270,34 @@ namespace Trivia
             Console.WriteLine("Question was incorrectly answered");
             Console.WriteLine($"{_players[_currentPlayer].Name} was sent to the penalty box");
             _players[_currentPlayer].IsInPenaltyBox = true;
+            _players[_currentPlayer].QuestionsAnsweredInARow = 0;
+            PlayerChooseNextQuestionCategory();
 
             NextPlayer();
         }
 
 
-        private bool DidPlayerWin()
+        protected bool DidPlayerWin()
         {
-            return _purses[_currentPlayer] == 6;
+            return _purses[_currentPlayer] >= _scoreToWin;
+        }
+
+        protected void PlayerChooseNextQuestionCategory()
+        {
+            //_nextCategory = Utils.AskACategory(_rockOrTechno);
+            List<Categories> categories = Enum.GetValues(typeof(Categories)).Cast<Categories>().Where(c =>
+            {
+                if (c == Categories.Rock && _rockOrTechno == Categories.Techno)
+                    return false;
+
+                if (c == Categories.Techno && _rockOrTechno == Categories.Rock)
+                    return false;
+
+                return true;
+            }).ToList();
+            
+            int indexOfCategories = Utils.Ask("Choose categorie for the next player.", categories.Select((c) => c.ToString()));
+            _nextCategory = categories[indexOfCategories];
         }
     }
-
 }

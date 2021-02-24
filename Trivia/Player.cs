@@ -10,6 +10,10 @@ namespace Trivia
 
         public bool IsInPenaltyBox { get; set; }
 
+        public int QuestionsAnsweredInARow { get; set; }
+
+        public int T
+
         public Player(string name)
         {
             Name = name;

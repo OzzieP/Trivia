@@ -20,7 +20,7 @@ namespace Tests
         public void TestAdd()
         {
             var aGame = new Game();
-            var addPlayer = aGame.Add(new Player("Chet"));
+            var addPlayer = aGame.AddPlayer(new Player("Chet"));
             Assert.True(addPlayer);
         }
 
@@ -28,7 +28,7 @@ namespace Tests
         public void TestPasAssezDeJoueur()
         {
             var aGame = new Game();
-            aGame.Add(new Player("Joueur1"));
+            aGame.AddPlayer(new Player("Joueur1"));
             var estJouable = aGame.IsPlayable();
             Assert.False(estJouable);
         }
@@ -37,8 +37,8 @@ namespace Tests
         public void TestAssezDeJoueur()
         {
             var aGame = new Game();
-            aGame.Add(new Player("Joueur1"));
-            aGame.Add(new Player("Joueur2"));
+            aGame.AddPlayer(new Player("Joueur1"));
+            aGame.AddPlayer(new Player("Joueur2"));
             var estJouable = aGame.IsPlayable();
             Assert.True(estJouable);
         }
@@ -47,13 +47,13 @@ namespace Tests
         public void TestTropDeJoueur()
         {
             var aGame = new Game();
-            aGame.Add(new Player("Joueur1"));
-            aGame.Add(new Player("Joueur2"));
-            aGame.Add(new Player("Joueur3"));
-            aGame.Add(new Player("Joueur4"));
-            aGame.Add(new Player("Joueur5"));
-            aGame.Add(new Player("Joueur6"));
-            aGame.Add(new Player("Joueur7"));
+            aGame.AddPlayer(new Player("Joueur1"));
+            aGame.AddPlayer(new Player("Joueur2"));
+            aGame.AddPlayer(new Player("Joueur3"));
+            aGame.AddPlayer(new Player("Joueur4"));
+            aGame.AddPlayer(new Player("Joueur5"));
+            aGame.AddPlayer(new Player("Joueur6"));
+            aGame.AddPlayer(new Player("Joueur7"));
             
             Assert.False(aGame.IsPlayable());
         }
@@ -61,17 +61,20 @@ namespace Tests
         [Fact]
         public void TestQuestionEquitable()
         {
-            ConsoleMock.MockConsole("6");
             var aGame = new GameTest();
 
-            aGame.Add(new Player("Joueur 1"));
-            aGame.Add(new Player("Joueur 2"));
+            aGame.AddPlayer(new Player("Joueur 1"));
+            aGame.AddPlayer(new Player("Joueur 2"));
 
             ConsoleMock.MockConsole("0");
             aGame.StartGame();
 
-            while (aGame.IsPlayable())
+            for(int i = 0; i < 20000; i++)
+            {
+                aGame.ResetPlayerScore();
                 aGame.Roll();
+            }
+                
 
             ConsoleMock.UnMockConsole();
 
@@ -81,7 +84,7 @@ namespace Tests
                 Debug.WriteLine("---------------------------");
                 foreach (KeyValuePair<string, int> entryValue in entry.Value)
                 {
-                    Debug.WriteLine($"{entryValue.Key}: {entryValue.Value}");
+                    Debug.WriteLine($"{entryValue.Key}: {entryValue.Value / (double) 20000 * 100}%");
                 }
                 Debug.WriteLine("===========================");
             }

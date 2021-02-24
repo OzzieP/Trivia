@@ -10,11 +10,13 @@ namespace Trivia
 
         public bool IsInPenaltyBox { get; set; }
 
-        public bool isWinner { get; set; } = false;
+        public bool IsWinner { get; set; } = false;
 
         public int QuestionsAnsweredInARow { get; set; }
 
         public int TimeInPenaltyBox { get; set; }
+
+        public int PercentBonus { get; set; }
 
         public Player(string name)
         {
@@ -45,7 +47,16 @@ namespace Trivia
         public bool IsOutOfPenaltyBox()
         {
             Random random = new Random();
-            return random.Next(TimeInPenaltyBox) == 0;
+            return random.Next(100) <= (100  /  TimeInPenaltyBox + PercentBonus  /  100);
+        }
+
+        public void Reset()
+        {
+            QuestionsAnsweredInARow = 0;
+            TimeInPenaltyBox = 0;
+            JokerIsAvailable = true;
+            IsInPenaltyBox = false;
+            IsWinner = false;
         }
     }
 }

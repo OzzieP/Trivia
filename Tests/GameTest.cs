@@ -37,10 +37,10 @@ namespace Tests
     {
         public Dictionary<String, Dictionary<String, Int32>> stats = new Dictionary<String, Dictionary<String, Int32>>();
 
-        public override bool Add(Player player)
+        public override bool AddPlayer(Player player)
         {
             stats.Add(player.Name, new Dictionary<String, Int32>());
-            return base.Add(player);
+            return base.AddPlayer(player);
         }
 
         public override void StartGame()
@@ -98,6 +98,12 @@ namespace Tests
             }
 
             return (Categories)NextCategory;
+        }
+
+        public void ResetPlayerScore()
+        {
+            Purses[CurrentPlayer] = 0;
+            Players[CurrentPlayer].QuestionsAnsweredInARow = 0;
         }
     }
 

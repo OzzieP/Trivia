@@ -9,11 +9,11 @@ namespace Trivia
         protected Categories? NextCategory = null;
         protected Categories RockOrTechno;
         protected int ScoreToWin;
+        protected bool IsNewGameWithSameConfiguration;
         
-        protected readonly List<Player> Players = new List<Player>();
-        protected readonly List<int> Places = new List<int>();
-        protected readonly List<int> Purses = new List<int>();
-        protected readonly List<bool> InPenaltyBox = new List<bool>();
+        protected List<Player> Players = new List<Player>();
+        protected List<int> Places = new List<int>();
+        protected List<int> Purses = new List<int>();
 
         protected readonly LinkedList<string> PopQuestions = new LinkedList<string>();
         protected readonly LinkedList<string> ScienceQuestions = new LinkedList<string>();
@@ -23,6 +23,8 @@ namespace Trivia
 
         protected readonly List<LinkedList<string>> QuestionsList;
         protected readonly List<Player> PlayersWin = new List<Player>();
+
+        protected readonly Dictionary<string, object> Configurations = new Dictionary<string, object>();
 
         protected int CurrentPlayer;
         protected bool IsGettingOutOfPenaltyBox;
@@ -39,13 +41,86 @@ namespace Trivia
             };
         }
 
+        public virtual void LaunchGame()
+        {
+            AddPlayer(new Player("Chet"));
+            AddPlayer(new Player("Pat"));
+            AddPlayer(new Player("Sue"));
+
+            if (!IsPlayable())
+                Console.WriteLine("Il n'y a pas assez ou trop de joueurs !");
+            else
+            {
+                StartGame();
+
+                while (IsPlayable())
+                    Roll();
+
+                DisplayLeaderBoard();
+            }
+        }
+
         public virtual void StartGame()
         {
-            int categorieChoice = Utils.Ask("Do you want to play with: ", new[] { "Techno questions ?", "Rock questions ?" });
-            RockOrTechno = categorieChoice == 0 ? Categories.Techno : Categories.Rock;
+            if (!IsNewGameWithSameConfiguration)
+            {
+                int categorieChoice = Utils.Ask("Do you want to play with: ", new[] { "Techno questions ?", "Rock questions ?" });
+                RockOrTechno = categorieChoice == 0 ? Categories.Techno : Categories.Rock;
 
-            ScoreToWin = Utils.AskANumber("How many gold to win ?", 6);
+                ScoreToWin = Utils.AskANumber("How many gold to win ?", 6);
+
+                CreateConfiguration();
+            }
+
             AddQuestions();
+        }
+
+        public virtual void CreateConfiguration()
+        {
+            Configurations.Clear();
+            Configurations.Add("Category", RockOrTechno);
+            Configurations.Add("Score", ScoreToWin);
+            Configurations.Add("Players", new List<Player>(Players));
+            Configurations.Add("Places", new List<int>(Places));
+            Configurations.Add("Purses", new List<int>(Purses));
+        }
+
+        public virtual void FinishGame()
+        {
+            Console.WriteLine("===================================================");
+            Console.WriteLine("===================================================");
+            int choice = Utils.Ask("Do you want to replay ?", new[] { "Yes", "No" });
+            
+            if (choice == 0)
+            {
+                int confChoice = Utils.Ask("Do you want to use the same configuration as the previous game ?", new[] { "Yes", "No" });
+
+                if (confChoice == 0)
+                    RestartGameWithSameConfiguration();
+                else
+                {
+                    IsNewGameWithSameConfiguration = false;
+                    LaunchGame();
+                }
+            }
+            else
+                Environment.Exit(1);
+        }
+
+        public virtual void RestartGameWithSameConfiguration()
+        {
+            IsNewGameWithSameConfiguration = true;
+            PlayersWin.Clear();
+
+            Players = (List<Player>)Configurations["Players"];
+            Places = (List<int>)Configurations["Places"];
+            Purses = (List<int>)Configurations["Purses"];
+            ScoreToWin = (int)Configurations["Score"];
+
+            foreach (Player player in Players)
+                player.Reset();
+
+            LaunchGame();
         }
 
         protected void AddQuestions()
@@ -73,12 +148,11 @@ namespace Trivia
             return HowManyPlayers() >= 2 && HowManyPlayers() <= 6;
         }
 
-        public virtual bool Add(Player player)
+        public virtual bool AddPlayer(Player player)
         {
             Players.Add(player);
             Places.Add(0);
             Purses.Add(0);
-            InPenaltyBox.Add(false);
 
             Console.WriteLine($"{player.Name} was added");
             Console.WriteLine($"They are player number {Players.Count}");
@@ -127,11 +201,12 @@ namespace Trivia
 
             if (Players[CurrentPlayer].IsInPenaltyBox)
             {
-                Console.WriteLine($"{Players[CurrentPlayer].Name} is in penalty box. The chance to get out is 1/{Players[CurrentPlayer].TimeInPenaltyBox}");
+                Console.WriteLine($"{Players[CurrentPlayer].Name} is in penalty box. The chance to get out is 1/{Players[CurrentPlayer].TimeInPenaltyBox} + {Players[CurrentPlayer].PercentBonus}%");
                 if (Players[CurrentPlayer].IsOutOfPenaltyBox())
                 {
                     IsGettingOutOfPenaltyBox = true;
                     Players[CurrentPlayer].IsInPenaltyBox = false;
+                    Players[CurrentPlayer].PercentBonus = 0;
 
                     Console.WriteLine($"{Players[CurrentPlayer].Name} is getting out of the penalty box");
                     Places[CurrentPlayer] = Places[CurrentPlayer] + roll;
@@ -144,8 +219,10 @@ namespace Trivia
                 }
                 else
                 {
+                    Players[CurrentPlayer].PercentBonus += 10;
                     Console.WriteLine($"{Players[CurrentPlayer].Name} is not getting out of the penalty box");
                     IsGettingOutOfPenaltyBox = false;
+                    NextPlayer();
                 }
             }
             else
@@ -211,12 +288,16 @@ namespace Trivia
 
         protected virtual void AnswerQuestion()
         {
-            // Test
-                //if (_players[_currentPlayer].AnswerQuestion() > 2)
             if (Players[CurrentPlayer].AnswerQuestion() == 7)
                 WrongAnswer();
             else
                 WasCorrectlyAnswered();
+
+            // Test
+            //if (Players[CurrentPlayer].AnswerQuestion() > 2)
+            //    WrongAnswer();
+            //else
+            //    WasCorrectlyAnswered();
         }
 
         public bool IsAWinner()
@@ -238,9 +319,21 @@ namespace Trivia
                 Console.WriteLine($" Rank {rank} : {player.Name}");
                 rank++;
             }
-           
-            foreach(Player player in Players)
-                Console.WriteLine($" Unranked : {player.Name}");
+
+            List<Player> players = Players.ToArray().ToList();
+            players.Sort((p, p2) => {
+                int goldP = Purses[Players.IndexOf(p)];
+                int goldP2 = Purses[Players.IndexOf(p2)];
+                return goldP > goldP2 ? 1 : goldP < goldP2 ? -1 : 0;
+            });
+            players.ForEach(player =>
+            {
+                Console.WriteLine($" Rank {rank} : {player.Name}");
+                rank++;
+            });
+
+
+            FinishGame();
         }
 
         protected virtual Categories CurrentCategory()
@@ -284,12 +377,12 @@ namespace Trivia
 
                     var winner = DidPlayerWin();
                     NextPlayer();
-                    Players[CurrentPlayer].isWinner = winner;
+                    Players[CurrentPlayer].IsWinner = winner;
                 }
                 else
                 {
                     NextPlayer();
-                    Players[CurrentPlayer].isWinner = true;
+                    Players[CurrentPlayer].IsWinner = true;
                 }
             }
             else
@@ -301,7 +394,7 @@ namespace Trivia
 
                 var winner = DidPlayerWin();
                 NextPlayer();
-                Players[CurrentPlayer].isWinner = winner;
+                Players[CurrentPlayer].IsWinner = winner;
             }
         }
 
